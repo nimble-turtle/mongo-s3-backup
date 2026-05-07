@@ -1,8 +1,6 @@
-FROM alpine:3.14 AS build
+FROM node:20-alpine AS build
 
-WORKDIR /root
-
-RUN apk add --update --no-cache nodejs npm
+WORKDIR /app
 
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -11,13 +9,13 @@ COPY src ./src
 RUN npm ci
 RUN npm run build
 
-FROM alpine:3.14
+FROM node:20-alpine
 
-WORKDIR /root
+WORKDIR /app
 
-COPY --from=build /root/node_modules ./node_modules
-COPY --from=build /root/dist ./dist
+RUN apk add --no-cache mongodb-tools
 
-RUN apk add --update --no-cache nodejs npm mongodb-tools
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
 
 ENTRYPOINT ["node", "dist/index.js"]
